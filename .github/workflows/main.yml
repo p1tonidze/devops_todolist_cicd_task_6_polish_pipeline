@@ -7,6 +7,7 @@ on:
     branches: ["main"]
   pull_request:
     branches: ["main"]
+
   workflow_dispatch:
     inputs:
       artifact_choice:
@@ -14,15 +15,11 @@ on:
         required: true
         default: 'ubuntu-latest-3.8'
         type: choice
-        options:
-        - ubuntu-latest-3.8
-        - ubuntu-latest-3.9
-        - windows-latest-3.8
-        - windows-latest-3.9
+        options: ['ubuntu-latest-3.8', 'ubuntu-latest-3.9', 'windows-latest-3.8', 'windows-latest-3.9']
 
 concurrency:
- group: ${{ github.workflow }}-${{ github.ref }}
- cancel-in-progress: true
+  group: ${{ github.workflow }} - ${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   PythonVersion: 3.8
@@ -42,7 +39,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python ${{ matrix.PythonVersion }}
+      - name: Setup Python ${{ matrix.PythonVersion }}
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.PythonVersion }}
@@ -94,21 +91,21 @@ jobs:
   docker-ci:
     name: Build and Push Image
     runs-on: ubuntu-latest
-    if: github.ref_name == 'main'
+    if: ${{ github.ref_name == 'main' }}
     needs: python-ci
     steps:
 
     - uses: actions/download-artifact@v4
       name: Download python artifacts
       with:
-        name: python-artifacts-${{ github.event.inputs.artifact_choice }}
+        name: python-artifacts-${{ github.event.inputs.artifact_choice  || 'ubuntu-latest-3.8' }}
         path: .
 
     - name: Login to Docker Hub
       uses: docker/login-action@v3
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }} 
 
     - name: Build and push
       uses: docker/build-push-action@v5
@@ -119,17 +116,17 @@ jobs:
 
   helm-ci:
     runs-on: ubuntu-latest
-    if: github.ref_name == 'main'
     needs: python-ci
+    if: github.ref_name == 'main'
     name: Helm CI
     steps:
 
     - uses: actions/download-artifact@v4
       with:
-        name: helm-artifacts-${{ github.event.inputs.artifact_choice }}
+        name: helm-artifacts-${{ github.event.inputs.artifact_choice  || 'ubuntu-latest-3.8' }}
         path: .
 
-    - name: Set Up Helm
+    - name: Setup Helm
       uses: azure/setup-helm@v4.2.0
 
     - name: Lint helm
@@ -155,7 +152,7 @@ jobs:
     with:
       environment: development
       version: ${{ github.sha }}
-      artifact_choice: ${{ github.event.inputs.artifact_choice }}
+      artifact_choice: ${{ github.event.inputs.artifact_choice || 'ubuntu-latest-3.8' }}
 
   deploy-helm-stg:
     name: Deploy helm to Staging
@@ -167,4 +164,4 @@ jobs:
       version: ${{ github.sha }}
       helm-values-path: ./todoapp/values/stg.yaml
       helm-release-name: todoapp-staging
-      artifact_choice: ${{ github.event.inputs.artifact_choice }}
+      artifact_choice: ${{ github.event.inputs.artifact_choice || 'ubuntu-latest-3.8' }}

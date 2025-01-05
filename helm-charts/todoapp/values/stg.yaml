@@ -2,7 +2,7 @@ mysql:
   namespace: mysql-staging
 
 todoapp:
-  namespace: todoapp-staging
+  namespace: todoapp
   image:
     repository: ikulyk404/todoapp
 
