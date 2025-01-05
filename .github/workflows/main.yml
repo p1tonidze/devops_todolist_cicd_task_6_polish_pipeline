@@ -106,7 +106,6 @@ jobs:
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
-        ecr: false
 
     - name: Build and push
       uses: docker/build-push-action@v5
@@ -167,4 +166,3 @@ jobs:
       helm-release-name: todoapp-staging
       artifact_choice: ${{ github.event.inputs.artifact_choice || 'ubuntu-latest-3.8' }}
 
-      
